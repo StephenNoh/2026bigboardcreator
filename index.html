@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 NBA Draft Big Board Creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0a1628; --navy-card: #162035; --accent: #f5a623;
+      --text-primary: #e8edf5; --text-secondary: #8fa3bf; --text-muted: #4a5e78;
+      --border: rgba(255,255,255,0.07); --radius: 8px;
+      --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+      --font-body: 'Barlow', Arial, sans-serif;
+    }
+    html, body { background: var(--navy); color: var(--text-primary); font-family: var(--font-body); font-size: 16px; min-height: 100vh; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; }
+
+    /* Header */
+    .site-header { padding: 36px 0 28px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .header-year { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 6px; }
+    .header-title { font-family: var(--font-display); font-size: clamp(36px, 8vw, 56px); font-weight: 800; line-height: 1; text-transform: uppercase; }
+    .header-title .accent { color: var(--accent); }
+    .header-sub { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
+
+    /* Progress */
+    .progress-track { height: 3px; background: var(--border); border-radius: 99px; margin-bottom: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; width: 0%; }
+    .progress-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 20px; }
+
+    /* Card */
+    .question-card { background: var(--navy-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px 24px 24px; }
+    .question-text { font-size: 18px; font-weight: 500; line-height: 1.5; color: var(--text-primary); margin-bottom: 28px; }
+
+    /* Options */
+    .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .option-btn {
+      display: block; width: 100%; text-align: left; padding: 13px 18px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: var(--font-body); font-size: 15px; font-weight: 500;
+      color: var(--text-secondary); background: transparent; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .option-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
+    .option-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(245,166,35,0.08); }
+
+    /* Controls */
+    .controls { display: flex; justify-content: space-between; gap: 12px; }
+    .btn { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 11px 24px; border-radius: var(--radius); border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: var(--navy); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
+
+    /* Results */
+    .results-title { font-family: var(--font-display); font-size: clamp(32px, 7vw, 48px); font-weight: 800; text-transform: uppercase; line-height: 1; }
+    .results-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 24px; }
+    .board-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 12px; }
+    .board-column { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .board-column-header { font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+    .board-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .board-row:last-child { border-bottom: none; }
+    .board-row.top { background: rgba(245,166,35,0.04); }
+    @media (max-width: 600px) { .board-columns { grid-template-columns: 1fr; gap: 12px 0; } }
+    .board-rank { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text-muted); min-width: 28px; line-height: 1; }
+    .board-row.top .board-rank { color: var(--accent); }
+    .board-name { font-size: 15px; font-weight: 600; color: var(--text-primary); flex: 1; }
+    .board-pos { font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+    .btn-secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .btn-secondary:hover { background: rgba(245,166,35,0.08); }
+    .results-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+
+    /* Footer */
+    .site-footer { text-align: center; padding: 24px 0 8px; border-top: 1px solid var(--border); margin-top: 32px; }
+    .site-footer a { font-size: 12px; color: var(--text-muted); text-decoration: none; }
+    .site-footer a:hover { color: var(--text-secondary); }
+    @media (max-width: 400px) { .board-pos { display: none; } .question-text { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <span class="header-year">2026</span>
+      <h1 class="header-title">NBA Draft <span class="accent">Blind Big Board</span></h1>
+      <p class="header-sub">Answer 10 questions. Get your personalized top 30 big board.</p>
+    </header>
+
+    <main>
+      <div id="quiz-wrapper">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-label" id="progress-label">Question 1 of 11</div>
+        <div class="question-card">
+          <p class="question-text" id="question-text"></p>
+          <div class="options" id="options"></div>
+          <div class="controls">
+            <button class="btn btn-ghost" id="prev-btn">&#8592; Back</button>
+            <button class="btn btn-primary" id="next-btn">Next &#8594;</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="results-wrapper" style="display:none;">
+        <h2 class="results-title">Your Big Board</h2>
+        <p class="results-sub">Based on your scouting philosophy</p>
+        <div class="big-board" id="big-board"></div>
+        <div class="results-footer" style="gap:12px;">
+          <button class="btn btn-primary" id="restart-btn">Retake Quiz</button>
+          <button class="btn btn-secondary" id="screenshot-btn">&#128247; Screenshot My Board</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <a href="https://twitter.com/StephNoh" target="_blank">@StephNoh on Twitter</a> <a href="https://bsky.app/profile/stephnoh.bsky.social" target="_blank">and BlueSky</a>
+    </footer>
+  </div>
+
+  <script>
+    var questions = [
+      { q: "Bad defensive habits as a prospect aren't a big deal.", a: ["Agree","Neutral","Disagree"], s: [0,1,2] },
+      { q: "I don't mind taking an older prospect as long as the production is there.", a: ["Agree","Neutral","Disagree"], s: [0,1,2] },
+      { q: "Give me the guy with top-tier athleticism even if he hasn't figured out how to use it yet.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "Low feel is a deal-breaker for me.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "Shooting can be taught in the NBA.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "I'd rather have a hard worker who will max out his potential over a better talent with serious focus issues.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "I would rather have a boom-or-bust prospect over someone with a high floor but low ceiling.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "I'm not wasting a good lottery pick on a big man.", a: ["Agree","Neutral","Disagree"], s: [-2,0,1] },
+      { q: "I'd rather have a guy with significant holes in his game who can drop 26 points than a jack of all trades, master of none.", a: ["Agree","Neutral","Disagree"], s: [2,1,0] },
+      { q: "It's always a mistake to build around small guards no matter how talented they are offensively.", a: ["Agree","Neutral","Disagree"], s: [-3,-1,0] }
+    ];
+
+    var players = [
+      { name: "Darryn Peterson",    pos: "SG/PG", base:  2.6, w: [0.6,0.9,0.9,0.6,0.8,0.7,1.7,0.0,0.9,0.0] },
+      { name: "AJ Dybantsa",        pos: "SF",    base:  3.0, w: [0.4,0.9,0.9,0.6,0.4,0.7,1.7,0.0,1.7,0.0] },
+      { name: "Cameron Boozer",     pos: "PF",    base:  2.8, w: [0.6,1.0,0.4,1.7,0.8,0.7,0.8,0.2,0.9,0.0] },
+      { name: "Caleb Wilson",       pos: "PF",    base:  1.6, w: [0.5,0.8,1.0,0.3,0.2,1.0,0.9,0.0,0.7,0.0] },
+      { name: "Kingston Flemings",  pos: "PG",    base:  1.5, w: [0.7,0.9,0.9,0.7,0.7,0.7,0.6,0.0,0.6,1.5] },
+      { name: "Keaton Wagler",      pos: "SG/PG", base:  1.5, w: [0.3,0.9,0.1,0.9,0.9,0.4,0.6,0.0,0.7,0.0] },
+      { name: "Mikel Brown Jr.",    pos: "PG",    base:  1.0, w: [0.4,0.7,0.5,0.6,0.4,0.7,0.7,0.0,0.6,0.5] },
+      { name: "Darius Acuff Jr.",   pos: "PG",    base:  2.3, w: [0.1,0.9,0.6,0.8,0.9,0.5,0.7,0.0,0.9,1.5] },
+      { name: "Nate Ament",         pos: "SF",    base: -0.5, w: [0.7,0.9,0.9,0.2,0.3,0.5,0.7,0.0,0.5,0.0] },
+      { name: "Brayden Burries",    pos: "SG/PG", base:  0.0, w: [0.6,0.5,0.7,0.5,0.7,0.7,0.3,0.0,0.5,0.3] },
+      { name: "Jayden Quaintance",  pos: "PF/C",  base: -2.0, w: [1.0,0.9,1.0,0.3,0.1,0.7,0.6,1.0,0.2,0.0] },
+      { name: "Yaxel Lendeborg",    pos: "PF",    base: -0.5, w: [0.9,0.1,0.7,0.8,0.6,0.7,0.3,0.0,0.5,0.0] },
+      { name: "Karim Lopez",        pos: "SF",    base: -2.0, w: [0.7,0.9,0.7,0.3,0.5,0.4,0.5,0.0,0.3,0.0] },
+      { name: "Labaron Philon",     pos: "PG",    base: -0.5, w: [0.2,0.5,0.3,0.8,0.7,0.4,0.5,0.0,0.7,1.2] },
+      { name: "Hannes Steinbach",   pos: "PF/C",  base:  0.5, w: [0.7,0.7,0.3,0.3,0.4,0.4,0.2,1.0,0.2,0.0] },
+      { name: "Bennett Stirtz",     pos: "PG",    base: -1.5, w: [0.2,0.1,0.3,1.2,1.3,0.6,0.4,0.0,0.8,1.0] },
+      { name: "Koa Peat",           pos: "PF",    base: -4.0, w: [0.7,0.9,0.8,0.7,0.2,0.7,0.4,0.0,0.4,0.0] },
+      { name: "Chris Cenac Jr.",    pos: "PF/C",  base: -2.0, w: [0.8,0.9,0.8,0.3,0.3,0.7,0.2,1.0,0.7,0.0] },
+      { name: "Aday Mara",          pos: "C",     base:  0.5, w: [0.9,0.3,0.3,0.7,0.1,0.3,0.4,1.2,0.4,0.0] },
+      { name: "Dailyn Swain",       pos: "SF",    base: -3.0, w: [0.7,0.5,0.8,0.8,0.5,0.7,0.6,0.0,0.7,0.0] },
+      { name: "Ebuka Okorie",       pos: "PG",    base: -3.5, w: [0.3,0.8,0.7,0.8,0.6,0.7,0.5,0.0,0.7,1.5] },
+      { name: "Cameron Carr",       pos: "SG",    base: -1.5, w: [0.6,0.3,0.8,0.6,0.9,0.7,0.5,0.0,0.7,0.0] },
+      { name: "Morez Johnson",      pos: "PF",    base: -2.5, w: [0.9,0.6,0.8,0.7,0.3,0.8,0.3,0.7,0.4,0.0] },
+      { name: "Allen Graves",       pos: "PF",    base: -3.0, w: [0.7,0.7,0.6,0.7,0.7,0.7,0.3,0.0,0.3,0.0] },
+      { name: "Tyler Tanner",       pos: "PG",    base: -3.0, w: [0.5,0.7,0.8,0.8,0.8,0.7,0.7,0.0,0.6,2.0] },
+      { name: "Christian Anderson", pos: "PG",    base: -3.0, w: [0.2,0.7,0.6,0.8,0.9,0.7,0.4,0.0,0.6,1.5] },
+      { name: "Amari Allen",        pos: "SF",    base: -4.5, w: [0.6,0.7,0.6,0.6,0.5,0.6,0.2,0.0,0.3,0.0] },
+      { name: "Isaiah Evans",       pos: "SG",    base: -3.5, w: [0.5,0.6,0.6,0.5,0.7,0.6,0.3,0.0,0.4,0.0] },
+      { name: "Henri Veesaar",      pos: "C",     base: -4.5, w: [0.6,0.3,0.3,0.7,0.8,0.6,0.3,1.0,0.5,0.0] },
+      { name: "Meleek Thomas",      pos: "SG",    base: -4.5, w: [0.4,0.6,0.6,0.2,0.8,0.6,0.5,0.0,0.6,0.2] },
+      { name: "Joshua Jefferson",   pos: "SF",    base: -4.5, w: [0.7,0.2,0.5,0.8,0.4,0.9,0.3,0.0,0.6,0.0] },
+      { name: "Tarris Reed Jr",     pos: "PF",    base: -5.0, w: [0.8,0.3,0.4,0.7,0.0,0.8,0.3,0.7,0.4,0.0] },
+      { name: "Zuby Ejiofor",       pos: "C",     base: -5.0, w: [0.8,0.3,0.7,0.7,0.3,0.9,0.3,0.9,0.3,0.0] },
+      { name: "Richie Saunders",    pos: "SF",    base: -5.3, w: [0.6,0.1,0.3,0.7,0.9,0.7,0.2,0.0,0.4,0.0] },
+      { name: "Tounde Yessoufou",   pos: "SF",    base: -5.3, w: [0.5,0.6,0.9,0.3,0.2,0.8,0.7,0.0,0.7,0.0] }
+    ];
+
+    var posColors = {
+      'PG':    {bg:'#0f2e4a',color:'#7ec8e3'}, 'SG': {bg:'#0f2e4a',color:'#7ec8e3'},
+      'SG/PG': {bg:'#0f2e4a',color:'#7ec8e3'}, 'SF': {bg:'#1e1040',color:'#c4b5fd'},
+      'SF/PF': {bg:'#1e1040',color:'#c4b5fd'}, 'PF': {bg:'#0a2e28',color:'#5eead4'},
+      'PF/C':  {bg:'#0a2e28',color:'#5eead4'}, 'C':  {bg:'#0a2e28',color:'#5eead4'}
+    };
+
+    var cur = 0;
+    var chosen = null;
+    var saved = new Array(questions.length).fill(null);
+
+    var quizEl     = document.getElementById('quiz-wrapper');
+    var resultsEl  = document.getElementById('results-wrapper');
+    var fillEl     = document.getElementById('progress-fill');
+    var labelEl    = document.getElementById('progress-label');
+    var qTextEl    = document.getElementById('question-text');
+    var optionsEl  = document.getElementById('options');
+    var prevBtn    = document.getElementById('prev-btn');
+    var nextBtn    = document.getElementById('next-btn');
+    var boardEl    = document.getElementById('big-board');
+    var restartBtn = document.getElementById('restart-btn');
+
+    function render(idx) {
+      var q = questions[idx];
+      fillEl.style.width = (idx / questions.length * 100) + '%';
+      labelEl.textContent = 'Question ' + (idx + 1) + ' of ' + questions.length;
+      qTextEl.textContent = q.q;
+      chosen = saved[idx];
+      optionsEl.innerHTML = '';
+      q.a.forEach(function(text, i) {
+        var btn = document.createElement('button');
+        btn.className = 'option-btn' + (chosen === i ? ' selected' : '');
+        btn.textContent = text;
+        btn.addEventListener('click', function() {
+          chosen = i;
+          Array.from(optionsEl.children).forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+        });
+        optionsEl.appendChild(btn);
+      });
+      prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = idx === questions.length - 1 ? 'See My Board' : 'Next \u2192';
+    }
+
+    nextBtn.addEventListener('click', function() {
+      if (chosen === null) { alert('Please select an answer!'); return; }
+      saved[cur] = chosen;
+      cur++;
+      if (cur === questions.length) {
+        showResults();
+      } else {
+        chosen = null;
+        render(cur);
+      }
+    });
+
+    prevBtn.addEventListener('click', function() {
+      if (cur === 0) return;
+      saved[cur] = chosen;
+      cur--;
+      render(cur);
+    });
+
+    restartBtn.addEventListener('click', function() {
+      cur = 0; chosen = null; saved = new Array(questions.length).fill(null);
+      resultsEl.style.display = 'none';
+      quizEl.style.display = 'block';
+      render(0);
+    });
+
+    document.getElementById('screenshot-btn').addEventListener('click', function() {
+      try {
+        var top30 = players.map(function(p) {
+          var score = p.base + p.w.reduce(function(sum,w,i){ return sum + w*questions[i].s[saved[i]]; },0);
+          return {name:p.name, pos:p.pos, score:score};
+        }).sort(function(a,b){return b.score-a.score;}).slice(0,30);
+
+        var W = 1080;
+        var padX = 40;
+        var colGap = 16;
+        var numCols = 3;
+        var colW = Math.floor((W - padX * 2 - colGap * (numCols - 1)) / numCols);
+        var rowH = 52;
+        var headerH = 180;
+        var footerH = 60;
+        var H = headerH + rowH * 10 + footerH;
+
+        var canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        var ctx = canvas.getContext('2d');
+
+        var posCol = {
+          'PG':'#7ec8e3','SG':'#7ec8e3','SG/PG':'#7ec8e3',
+          'SF':'#c4b5fd','SF/PF':'#c4b5fd',
+          'PF':'#5eead4','PF/C':'#5eead4','C':'#5eead4'
+        };
+
+        // BG
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(0, 0, W, H);
+
+        // Gold top bar
+        ctx.fillStyle = '#f5a623';
+        ctx.fillRect(0, 0, W, 6);
+
+        // "2026" label
+        ctx.fillStyle = '#f5a623';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('2 0 2 6', padX, 52);
+
+        // Title
+        ctx.fillStyle = '#e8edf5';
+        ctx.font = 'bold 80px Arial';
+        ctx.fillText('NBA DRAFT', padX, 130);
+        var w1 = ctx.measureText('NBA DRAFT').width;
+        ctx.fillStyle = '#f5a623';
+        ctx.fillText(' BIG BOARD', padX + w1, 130);
+
+        // Subtitle
+        ctx.fillStyle = '#4a5e78';
+        ctx.font = '22px Arial';
+        ctx.fillText('A blind NBA big board', padX, 162);
+
+        // Divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padX, headerH - 8);
+        ctx.lineTo(W - padX, headerH - 8);
+        ctx.stroke();
+
+        // Draw three columns
+        [0, 1, 2].forEach(function(col) {
+          var colX = padX + col * (colW + colGap);
+          var offset = col * 10;
+          var slice = top30.slice(offset, offset + 10);
+
+          // Column border
+          ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(colX, headerH, colW, rowH * 10);
+
+          slice.forEach(function(p, j) {
+            var globalIndex = offset + j;
+            var rowY = headerH + j * rowH;
+            var midY = rowY + rowH / 2;
+
+            // Top-14 highlight bg
+            if (globalIndex < 14) {
+              ctx.fillStyle = 'rgba(245,166,35,0.06)';
+              ctx.fillRect(colX, rowY, colW, rowH);
+            } else if (j % 2 === 0) {
+              ctx.fillStyle = 'rgba(255,255,255,0.02)';
+              ctx.fillRect(colX, rowY, colW, rowH);
+            }
+
+            // Row divider
+            if (j < 9) {
+              ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(colX, rowY + rowH);
+              ctx.lineTo(colX + colW, rowY + rowH);
+              ctx.stroke();
+            }
+
+            // Rank number
+            ctx.fillStyle = globalIndex < 14 ? '#f5a623' : '#4a5e78';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(String(globalIndex + 1), colX + 36, midY + 9);
+
+            // Player name — truncate if needed
+            ctx.fillStyle = '#e8edf5';
+            ctx.textAlign = 'left';
+            var pillW = 76, pillGap = 10, nameMaxW = colW - 36 - 14 - pillW - pillGap;
+            var fontSize = 19;
+            ctx.font = '600 ' + fontSize + 'px Arial';
+            while (ctx.measureText(p.name).width > nameMaxW && fontSize > 10) {
+              fontSize--;
+              ctx.font = '600 ' + fontSize + 'px Arial';
+            }
+            ctx.fillText(p.name, colX + 46, midY + 7);
+
+            // Position pill
+            var pillH2 = 28, pillX = colX + colW - pillW - 10, pillY = midY - pillH2 / 2;
+            ctx.fillStyle = 'rgba(255,255,255,0.07)';
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH2, 5);
+            ctx.fill();
+            ctx.fillStyle = posCol[p.pos] || '#aaaaaa';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(p.pos, pillX + pillW / 2, midY + 6);
+          });
+        });
+
+        // Footer
+        ctx.fillStyle = '#2a3f5a';
+        ctx.fillRect(0, H - footerH, W, footerH);
+        ctx.fillStyle = '#4a5e78';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('@StephNoh', padX, H - footerH / 2 + 8);
+
+        // Download
+        var link = document.createElement('a');
+        link.download = '2026-nba-big-board.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+      } catch(e) {
+        alert('Screenshot failed: ' + e.message);
+      }
+    });
+
+    function showResults() {
+      quizEl.style.display = 'none';
+      resultsEl.style.display = 'block';
+      var ranked = players.map(function(p) {
+        var score = p.base + p.w.reduce(function(sum, w, i) {
+          return sum + w * questions[i].s[saved[i]];
+        }, 0);
+        return { name: p.name, pos: p.pos, score: score };
+      }).sort(function(a, b) { return b.score - a.score; });
+
+      var top30 = ranked.slice(0, 30);
+      var colOffsets = [0, 10, 20];
+      boardEl.innerHTML = '<div class="board-columns">' + colOffsets.map(function(offset) {
+        return '<div class="board-column">' +
+          top30.slice(offset, offset + 10).map(function(p, j) {
+            var i = offset + j;
+            var c = posColors[p.pos] || {bg:'#222',color:'#aaa'};
+            return '<div class="board-row' + (i < 14 ? ' top' : '') + '">' +
+              '<span class="board-rank">' + (i+1) + '</span>' +
+              '<span class="board-name">' + p.name + '</span>' +
+              '<span class="board-pos" style="background:' + c.bg + ';color:' + c.color + '">' + p.pos + '</span>' +
+              '</div>';
+          }).join('') + '</div>';
+      }).join('') + '</div>';
+    }
+
+    render(0);
+  </script>
+</body>
+</html>
